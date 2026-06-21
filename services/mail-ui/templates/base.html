@@ -157,7 +157,11 @@
     {% endwith %}
     {% block content %}{% endblock %}
     <div class="connection-info">
-      IMAP: <code>localhost:{{ imap_host_port }}</code> · SMTP: <code>localhost:{{ smtp_host_port }}</code> · Login: <code>{{ mail_address }}</code>
+      IMAP: <code>localhost:{{ imap_host_port }}</code> · SMTP: <code>localhost:{{ smtp_host_port }}</code>
+      · Mailboxes:
+      {% for mailbox in mailboxes %}
+        <code>{{ mailbox.address }}</code>{% if not loop.last %}, {% endif %}
+      {% endfor %}
     </div>
   </main>
 </body>

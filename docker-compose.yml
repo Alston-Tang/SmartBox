@@ -70,6 +70,10 @@ services:
       IMAP_USE_SSL: ${IMAP_USE_SSL:-false}
       IMAP_HOST_PORT: ${IMAP_HOST_PORT:-1143}
       SMTP_HOST_PORT: ${SMTP_HOST_PORT:-25}
+      # Extra inboxes to merge into the web UI (same Stalwart host by default).
+      # Simple: label:address:password,address:password
+      # JSON: [{"label":"Alias","address":"user2@domain","password":"secret"}]
+      EXTRA_MAILBOXES: ${EXTRA_MAILBOXES:-}
     ports:
       - "${MAIL_UI_HOST_PORT:-8025}:8080/tcp"
 

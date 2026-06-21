@@ -26,6 +26,21 @@ tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
   font-weight: 600;
 }
 .subject-link:hover { color: var(--accent); }
+.mailbox-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
 {% endblock %}
 
 {% block content %}
@@ -33,7 +48,9 @@ tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
   <div class="panel-header">
     <div>
       <h1>Inbox</h1>
-      <div class="meta">{{ messages|length }} message(s) for {{ mail_address }}</div>
+      <div class="meta">
+        {{ messages|length }} message(s) across {{ mailboxes|length }} mailbox(es)
+      </div>
     </div>
     <a class="btn" href="{{ url_for('send') }}">Send test email</a>
   </div>
@@ -41,6 +58,7 @@ tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
   <table>
     <thead>
       <tr>
+        <th>Mailbox</th>
         <th>From</th>
         <th>Subject</th>
         <th>Received</th>
@@ -49,6 +67,7 @@ tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
     <tbody>
       {% for message in messages %}
       <tr>
+        <td><span class="mailbox-tag" title="{{ message.mailbox_address }}">{{ message.mailbox }}</span></td>
         <td>{{ message.from }}</td>
         <td><a class="subject-link" href="{{ url_for('message_view', msg_id=message.id) }}">{{ message.subject }}</a></td>
         <td>
