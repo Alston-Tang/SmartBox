@@ -1,16 +1,36 @@
+# Portainer: set variables under Stack → Environment variables (or "Load variables
+# from .env file" in the stack editor). Compose substitutes ${VAR:-default} here;
+# values are passed into containers via `environment` below (no env_file required).
+#
+# Required secrets to set in Portainer:
+#   MAIL_PASSWORD, STALWART_ADMIN_PASSWORD
+# Optional relay (leave SMTP_RELAY_HOST empty to disable):
+#   SMTP_RELAY_HOST, SMTP_RELAY_PASSWORD, SMTP_RELAY_USERNAME
+
+x-mail-env: &mail-env
+  MAIL_ADDRESS: ${MAIL_ADDRESS:-default@mail.thm64.com}
+  MAIL_USER: ${MAIL_USER:-default}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-smartbox-dev}
+  MAIL_DOMAIN: ${MAIL_DOMAIN:-mail.thm64.com}
+  MAIL_HOSTNAME: ${MAIL_HOSTNAME:-mail.thm64.com}
+
+x-relay-env: &relay-env
+  SMTP_RELAY_HOST: ${SMTP_RELAY_HOST:-}
+  SMTP_RELAY_PORT: ${SMTP_RELAY_PORT:-465}
+  SMTP_RELAY_IMPLICIT_TLS: ${SMTP_RELAY_IMPLICIT_TLS:-true}
+  SMTP_RELAY_USERNAME: ${SMTP_RELAY_USERNAME:-}
+  SMTP_RELAY_PASSWORD: ${SMTP_RELAY_PASSWORD:-}
+  SMTP_RELAY_ALLOW_INVALID_CERTS: ${SMTP_RELAY_ALLOW_INVALID_CERTS:-false}
+
 services:
   stalwart:
     build: ./services/stalwart
     restart: unless-stopped
-    env_file: .env
     environment:
-      STALWART_ADMIN_USER: admin
+      <<: [*mail-env, *relay-env]
+      STALWART_ADMIN_USER: ${STALWART_ADMIN_USER:-admin}
       STALWART_ADMIN_PASSWORD: ${STALWART_ADMIN_PASSWORD:-smartbox-admin}
-      STALWART_RECOVERY_ADMIN: admin:${STALWART_ADMIN_PASSWORD:-smartbox-admin}
-      MAIL_HOSTNAME: ${MAIL_HOSTNAME:-mail.thm64.com}
-      MAIL_DOMAIN: ${MAIL_DOMAIN:-mail.thm64.com}
-      MAIL_USER: ${MAIL_USER:-default}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:-smartbox-dev}
+      STALWART_RECOVERY_ADMIN: ${STALWART_RECOVERY_ADMIN:-admin:${STALWART_ADMIN_PASSWORD:-smartbox-admin}}
     volumes:
       - stalwart-data:/var/lib/stalwart
       - ./config/stalwart/config.json:/etc/stalwart/config.json:ro
@@ -35,15 +55,18 @@ services:
     depends_on:
       stalwart:
         condition: service_healthy
-    env_file: .env
     environment:
-      SMTP_HOST: stalwart
-      SMTP_PORT: 25
-      SMTP_USE_TLS: "false"
-      SMTP_AUTH: "true"
-      IMAP_HOST: stalwart
-      IMAP_PORT: 143
-      IMAP_USE_SSL: "false"
+      <<: *mail-env
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-smartbox-local-mail-dev}
+      SMTP_HOST: ${SMTP_HOST:-stalwart}
+      SMTP_PORT: ${SMTP_PORT:-25}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
+      SMTP_AUTH: ${SMTP_AUTH:-true}
+      IMAP_HOST: ${IMAP_HOST:-stalwart}
+      IMAP_PORT: ${IMAP_PORT:-143}
+      IMAP_USE_SSL: ${IMAP_USE_SSL:-false}
+      IMAP_HOST_PORT: ${IMAP_HOST_PORT:-1143}
+      SMTP_HOST_PORT: ${SMTP_HOST_PORT:-25}
     ports:
       - "${MAIL_UI_HOST_PORT:-8025}:8080/tcp"
 
