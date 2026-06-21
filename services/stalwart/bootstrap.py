@@ -11,7 +11,8 @@ import urllib.request
 from pathlib import Path
 
 
-MARKER = Path("/var/lib/stalwart/.smartbox-initialized-v5")
+BOOTSTRAP_VERSION = "plaintext-v6"
+MARKER = Path("/var/lib/stalwart/.smartbox-initialized-v6")
 ROLES_MARKER = Path("/var/lib/stalwart/.smartbox-roles-v1")
 RELAY_MARKER = Path("/var/lib/stalwart/.smartbox-relay-v1")
 JMAP_URL = os.environ.get("STALWART_JMAP_URL", "http://127.0.0.1:8080/jmap")
@@ -501,6 +502,7 @@ def configure_smartbox():
 
 def main():
     phase = os.environ.get("SMARTBOX_PHASE", "recovery")
+    print(f"SmartBox bootstrap {BOOTSTRAP_VERSION} (phase={phase})", flush=True)
     wait_for_jmap()
 
     if phase == "roles":

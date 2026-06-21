@@ -25,6 +25,7 @@ x-relay-env: &relay-env
 services:
   stalwart:
     build: ./services/stalwart
+    image: ${SMARTBOX_STALWART_IMAGE:-smartbox-stalwart:plaintext-v6}
     restart: unless-stopped
     environment:
       <<: [*mail-env, *relay-env]
@@ -51,6 +52,7 @@ services:
 
   mail-ui:
     build: ./services/mail-ui
+    image: ${SMARTBOX_MAIL_UI_IMAGE:-smartbox-mail-ui:plaintext-v6}
     restart: unless-stopped
     depends_on:
       stalwart:

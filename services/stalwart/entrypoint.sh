@@ -26,7 +26,7 @@ run_bootstrap_phase() {
 
 # Phase 1 (recovery mode): the recovery JMAP endpoint on :8080 lets us create
 # the domain, plaintext listeners and mailbox account on a fresh database.
-if [ ! -f /var/lib/stalwart/.smartbox-initialized-v5 ]; then
+if [ ! -f /var/lib/stalwart/.smartbox-initialized-v6 ]; then
   export STALWART_RECOVERY_MODE=1
   /usr/local/bin/stalwart --config "$config_path" &
   stalwart_pid=$!
