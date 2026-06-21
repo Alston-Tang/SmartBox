@@ -24,8 +24,10 @@ x-relay-env: &relay-env
 
 services:
   stalwart:
-    build: ./services/stalwart
-    image: ${SMARTBOX_STALWART_IMAGE:-smartbox-stalwart:plaintext-v6}
+    build:
+      context: .
+      dockerfile: services/stalwart/Dockerfile
+    image: ${SMARTBOX_STALWART_IMAGE:-smartbox-stalwart:plaintext-v7}
     restart: unless-stopped
     environment:
       <<: [*mail-env, *relay-env]
@@ -34,7 +36,6 @@ services:
       STALWART_RECOVERY_ADMIN: ${STALWART_RECOVERY_ADMIN:-admin:${STALWART_ADMIN_PASSWORD:-smartbox-admin}}
     volumes:
       - stalwart-data:/var/lib/stalwart
-      - ./config/stalwart/config.json:/etc/stalwart/config.json:ro
     ports:
       - "${SMTP_HOST_PORT:-25}:25/tcp"
       - "${IMAP_HOST_PORT:-1143}:143/tcp"
@@ -52,7 +53,7 @@ services:
 
   mail-ui:
     build: ./services/mail-ui
-    image: ${SMARTBOX_MAIL_UI_IMAGE:-smartbox-mail-ui:plaintext-v6}
+    image: ${SMARTBOX_MAIL_UI_IMAGE:-smartbox-mail-ui:plaintext-v7}
     restart: unless-stopped
     depends_on:
       stalwart:

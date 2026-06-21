@@ -4,8 +4,9 @@ USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 \
     && rm -rf /var/lib/apt/lists/*
-COPY bootstrap.py /opt/smartbox/bootstrap.py
-COPY entrypoint.sh /entrypoint.sh
+COPY services/stalwart/bootstrap.py /opt/smartbox/bootstrap.py
+COPY services/stalwart/entrypoint.sh /entrypoint.sh
+COPY config/stalwart/config.json /etc/stalwart/config.json
 RUN chmod +x /entrypoint.sh /opt/smartbox/bootstrap.py
 USER stalwart
 

@@ -118,7 +118,7 @@ SmartBox/
 ├── docker-compose.yml
 ├── .env.example
 ├── config/
-│   └── stalwart/config.json
+│   └── stalwart/config.json   # baked into the stalwart image at build time
 ├── scripts/list_imap.py
 └── services/
     ├── stalwart/
