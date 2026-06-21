@@ -27,12 +27,12 @@
 <div class="panel">
   <div class="panel-header">
     <div>
-      <a class="back-link" href="{{ url_for('inbox') }}">← Back to inbox</a>
+      <a class="back-link" href="{{ url_for('inbox', folder=message.folder) }}">← Back to {{ message.folder }}</a>
       <h1>{{ message.subject }}</h1>
     </div>
   </div>
   <div class="message-meta">
-    <div><strong>Mailbox:</strong> {{ message.mailbox }}</div>
+    <div><strong>Folder:</strong> {{ message.folder }}</div>
     <div><strong>From:</strong> {{ message.from }}</div>
     <div><strong>To:</strong> {{ message.to }}</div>
     <div>

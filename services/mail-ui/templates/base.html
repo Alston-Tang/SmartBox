@@ -54,7 +54,7 @@
     }
     .brand { font-weight: 700; font-size: 1.1rem; }
     .brand span { color: var(--muted); font-weight: 500; }
-    nav { display: flex; gap: 0.75rem; }
+    nav { display: flex; gap: 0.75rem; flex-wrap: wrap; }
     nav a {
       color: var(--text);
       text-decoration: none;
@@ -142,7 +142,9 @@
     <div class="header-inner">
       <div class="brand">SmartBox Mail <span>{{ mail_address }}</span></div>
       <nav>
-        <a href="{{ url_for('inbox') }}" class="{% if request.endpoint == 'inbox' or request.endpoint == 'message_view' %}active{% endif %}">Inbox</a>
+        {% for folder in folders %}
+        <a href="{{ url_for('inbox', folder=folder) }}" class="{% if folder == current_folder and request.endpoint in ['inbox', 'message_view'] %}active{% endif %}">{{ folder }}</a>
+        {% endfor %}
         <a href="{{ url_for('send') }}" class="{% if request.endpoint == 'send' %}active{% endif %}">Send test</a>
       </nav>
     </div>
@@ -157,11 +159,7 @@
     {% endwith %}
     {% block content %}{% endblock %}
     <div class="connection-info">
-      IMAP: <code>localhost:{{ imap_host_port }}</code> · SMTP: <code>localhost:{{ smtp_host_port }}</code>
-      · Mailboxes:
-      {% for mailbox in mailboxes %}
-        <code>{{ mailbox.address }}</code>{% if not loop.last %}, {% endif %}
-      {% endfor %}
+      IMAP: <code>localhost:{{ imap_host_port }}</code> · SMTP: <code>localhost:{{ smtp_host_port }}</code> · Login: <code>{{ mail_address }}</code>
     </div>
   </main>
 </body>
