@@ -49,6 +49,14 @@ def connect_imap(cfg):
     return imaplib.IMAP4(cfg["imap_host"], cfg["imap_port"])
 
 
+def quote_mailbox(name: str) -> str:
+    """Quote mailbox names for IMAP SELECT (required for names containing spaces)."""
+    if name.upper() == "INBOX":
+        return "INBOX"
+    escaped = name.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
 def parse_mailbox_name(line: bytes) -> Optional[str]:
     text = line.decode(errors="replace")
     if ")" not in text:
@@ -193,7 +201,7 @@ def fetch_messages(folder: str, limit: int = INBOX_LIMIT):
     folder = resolve_folder(folder, folders)
     imap = with_imap(cfg)
     try:
-        status, _ = imap.select(folder, readonly=True)
+        status, _ = imap.select(quote_mailbox(folder), readonly=True)
         if status != "OK":
             raise RuntimeError(f"Could not open folder {folder}")
 
@@ -232,7 +240,7 @@ def fetch_message(ref: str):
 
     imap = with_imap(cfg)
     try:
-        status, _ = imap.select(folder, readonly=True)
+        status, _ = imap.select(quote_mailbox(folder), readonly=True)
         if status != "OK":
             return None
         status, fetched = imap.fetch(imap_id.encode(), "(RFC822)")
