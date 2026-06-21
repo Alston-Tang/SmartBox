@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Inbox · SmartBox Mail{% endblock %}
+
+{% block extra_styles %}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  text-align: left;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.subject-link {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+}
+.subject-link:hover { color: var(--accent); }
+{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <h1>Inbox</h1>
+      <div class="meta">{{ messages|length }} message(s) for {{ mail_address }}</div>
+    </div>
+    <a class="btn" href="{{ url_for('send') }}">Send test email</a>
+  </div>
+  {% if messages %}
+  <table>
+    <thead>
+      <tr>
+        <th>From</th>
+        <th>Subject</th>
+        <th>Received</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for message in messages %}
+      <tr>
+        <td>{{ message.from }}</td>
+        <td><a class="subject-link" href="{{ url_for('message_view', msg_id=message.id) }}">{{ message.subject }}</a></td>
+        <td>
+          {% if message.received_at %}
+            {{ message.received_at.strftime('%Y-%m-%d %H:%M') }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    No messages yet. Use the send test page or point your app at SMTP port {{ smtp_host_port }}.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+services:
+  stalwart:
+    build: ./services/stalwart
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      STALWART_ADMIN_USER: admin
+      STALWART_ADMIN_PASSWORD: ${STALWART_ADMIN_PASSWORD:-smartbox-admin}
+      STALWART_RECOVERY_ADMIN: admin:${STALWART_ADMIN_PASSWORD:-smartbox-admin}
+      MAIL_HOSTNAME: ${MAIL_HOSTNAME:-mail.thm64.com}
+      MAIL_DOMAIN: ${MAIL_DOMAIN:-mail.thm64.com}
+      MAIL_USER: ${MAIL_USER:-default}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-smartbox-dev}
+    volumes:
+      - stalwart-data:/var/lib/stalwart
+      - ./config/stalwart/config.json:/etc/stalwart/config.json:ro
+    ports:
+      - "${SMTP_HOST_PORT:-25}:25/tcp"
+      - "${IMAP_HOST_PORT:-1143}:143/tcp"
+      - "${STALWART_ADMIN_HOST_PORT:-8081}:8080/tcp"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python3 -c \"import imaplib, os; u=os.environ.get('MAIL_USER','default'); d=os.environ.get('MAIL_DOMAIN','mail.thm64.com'); p=os.environ.get('MAIL_PASSWORD','smartbox-dev'); m=imaplib.IMAP4('127.0.0.1',143); m.login(f'{u}@{d}', p); m.logout()\" || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+  mail-ui:
+    build: ./services/mail-ui
+    restart: unless-stopped
+    depends_on:
+      stalwart:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      SMTP_HOST: stalwart
+      SMTP_PORT: 25
+      SMTP_USE_TLS: "false"
+      SMTP_AUTH: "true"
+      IMAP_HOST: stalwart
+      IMAP_PORT: 143
+      IMAP_USE_SSL: "false"
+    ports:
+      - "${MAIL_UI_HOST_PORT:-8025}:8080/tcp"
+
+volumes:
+  stalwart-data:
+    name: smartbox-stalwart-data
