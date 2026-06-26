@@ -88,14 +88,15 @@ Authenticated SMTP on port 25 is required to relay to external domains; unauthen
 
 ### Roundcube SMTP 550 ("Relay not allowed")
 
-Stalwart returns `550 5.1.2 Relay not allowed` when mail to an external address is sent **without SMTP AUTH**. Roundcube must authenticate with your full mailbox address (`default@your-domain`), not just the local part.
+Stalwart returns `550 5.1.2 Relay not allowed` when mail to an external address is sent **without SMTP AUTH** and the client is not on a private network. SmartBox allows relay from RFC1918/docker addresses (e.g. `192.168.x.x`) so Roundcube can submit mail on the internal Docker network.
 
-SmartBox disables From-address matching for authenticated SMTP (`mustMatchSender` and `isSenderAllowed`), so any `From:` header is accepted once you are logged in. Relay to external domains still requires SMTP AUTH.
+From-address checks are disabled (`mustMatchSender`, `isSenderAllowed`). Any `From:` header is accepted.
 
-After updating the stack, restart so Stalwart re-applies its SMTP policy and Roundcube reloads `config/roundcube/custom.inc.php`:
+After updating, redeploy:
 
 ```bash
 docker compose up -d --build
+docker compose restart roundcube
 ```
 
 If outbound mail still fails after auth works, check that `SMTP_RELAY_HOST` and `SMTP_RELAY_PASSWORD` are set in Portainer/.env. To force relay reconfiguration, remove the marker and restart:

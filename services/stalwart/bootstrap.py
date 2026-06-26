@@ -323,6 +323,23 @@ def ensure_default_roles():
     print(f"Default roles set (user={user_role_id})", flush=True)
 
 
+# RFC1918 + loopback: allow Roundcube/docker clients to relay without SMTP AUTH
+# on this internal-only stack (port 25 must not be exposed to the public internet).
+_PRIVATE_RELAY_IF = (
+    "starts_with(remote_ip, '10.') || "
+    "starts_with(remote_ip, '192.168.') || "
+    "starts_with(remote_ip, '172.16.') || starts_with(remote_ip, '172.17.') || "
+    "starts_with(remote_ip, '172.18.') || starts_with(remote_ip, '172.19.') || "
+    "starts_with(remote_ip, '172.20.') || starts_with(remote_ip, '172.21.') || "
+    "starts_with(remote_ip, '172.22.') || starts_with(remote_ip, '172.23.') || "
+    "starts_with(remote_ip, '172.24.') || starts_with(remote_ip, '172.25.') || "
+    "starts_with(remote_ip, '172.26.') || starts_with(remote_ip, '172.27.') || "
+    "starts_with(remote_ip, '172.28.') || starts_with(remote_ip, '172.29.') || "
+    "starts_with(remote_ip, '172.30.') || starts_with(remote_ip, '172.31.') || "
+    "remote_ip == '127.0.0.1' || remote_ip == '::1'"
+)
+
+
 def ensure_smtp_submission_policy():
     """Enable authenticated submission over plaintext SMTP and relax From checks.
 
@@ -332,8 +349,9 @@ def ensure_smtp_submission_policy():
     is enabled on port 25 so Roundcube and mail clients can authenticate.
 
     From-address checks are disabled for authenticated submission: any MAIL FROM is
-    accepted and relayed once the session is authenticated. Unauthenticated inbound
-    mail can still only be delivered to local domains.
+    accepted once the session is authenticated. Relay to external domains is also
+    allowed from private-network clients (Docker/LAN) so Roundcube can submit mail
+    without relying on SMTP AUTH from PHP.
     """
     auth_update = {
         "saslMechanisms": {"else": "[plain, login]"},
@@ -343,7 +361,13 @@ def ensure_smtp_submission_policy():
         "isSenderAllowed": {"else": "true"},
     }
     rcpt_update = {
-        "allowRelaying": {"else": "!is_empty(authenticated_as)"},
+        "allowRelaying": {
+            "match": {
+                "0": {"if": "!is_empty(authenticated_as)", "then": "true"},
+                "1": {"if": _PRIVATE_RELAY_IF, "then": "true"},
+            },
+            "else": "false",
+        },
     }
     ehlo_update = {
         # Roundcube/docker clients often EHLO with a short container hostname.
@@ -365,7 +389,7 @@ def ensure_smtp_submission_policy():
             raise RuntimeError(f"Failed to set SMTP {label} policy: {result}")
     print(
         "SMTP policy: AUTH on plaintext ports; From/EHLO checks relaxed; "
-        "relay allowed when authenticated",
+        "relay allowed when authenticated or from private networks",
         flush=True,
     )
 

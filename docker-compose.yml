@@ -70,7 +70,8 @@ services:
       ROUNDCUBEMAIL_USERNAME_DOMAIN: ${MAIL_DOMAIN:-mail.thm64.com}
     volumes:
       - roundcube-data:/var/roundcube/db
-      - ./config/roundcube:/var/roundcube/config:ro
+      - ./config/roundcube:/var/roundcube/config
+      - ./services/roundcube/10-smtp-config.sh:/entrypoint-tasks/post-setup/10-smtp-config.sh:ro
     ports:
       - "${ROUNDCUBE_HOST_PORT:-8025}:80/tcp"
 
