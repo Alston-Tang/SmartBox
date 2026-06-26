@@ -11,15 +11,13 @@ out="/var/roundcube/smtp.generated.inc.php"
 
 domain="${MAIL_DOMAIN:-}"
 host="${MAIL_HOSTNAME:-$domain}"
-smtp_user="%u"
-if [ -n "$domain" ]; then
-  smtp_user="%u@${domain}"
-fi
 
+# %u is already the full mailbox address: username_domain (set from MAIL_DOMAIN)
+# appends the domain at login, so do NOT append it again here.
 {
   echo "<?php"
   echo "// Generated at container start by SmartBox (do not edit)."
-  echo "\$config['smtp_user'] = '${smtp_user}';"
+  echo "\$config['smtp_user'] = '%u';"
   echo "\$config['smtp_pass'] = '%p';"
   if [ -n "$host" ]; then
     echo "\$config['smtp_helo_host'] = '${host}';"
