@@ -6,7 +6,7 @@ bootstrap). Because the bootstrap marker persists in that volume, editing
 MAIL_PASSWORD in .env alone does NOT change it. This script updates the
 credential live through the admin JMAP API instead.
 
-It also keeps .env in sync (the healthcheck and mail-ui authenticate with
+It also keeps .env in sync (the healthcheck authenticates with
 MAIL_PASSWORD) and recreates the containers so they pick up the new value. The
 named volume and bootstrap marker are preserved, so no data is lost.
 """
@@ -90,7 +90,7 @@ def main() -> int:
 
     admin_user = env.get("STALWART_ADMIN_USER", "admin")
     admin_password = env.get("STALWART_ADMIN_PASSWORD", "smartbox-admin")
-    admin_port = env.get("STALWART_ADMIN_HOST_PORT", "8081")
+    admin_port = env.get("STALWART_ADMIN_HOST_PORT", "8087")
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("new_password", nargs="?", help="New password (prompted if omitted)")

@@ -1,27 +1,25 @@
 # SmartBox
 
-Local email service for development and testing. **Stalwart** stores mail persistently on disk; the **mail-ui** app provides a quick inbox view and SMTP send test page.
+Local email service for development and testing. **Stalwart** stores mail persistently on disk and serves plaintext SMTP and IMAP. **Roundcube** provides a webmail UI on the internal network.
 
 > **Internal network only.** All connections use plaintext (no TLS). Do not expose these ports to the public internet. Outbound mail to external domains is relayed through an SMTP smarthost (e.g. Cloudflare) over TLS.
 
 ## Architecture
 
 ```
-Your app / mail client
+Browser / mail client
        │
-       ├── SMTP (25, plaintext, AUTH) ──► Stalwart (RocksDB volume)
-       │                                         │
-       └── IMAP (1143, plaintext) ◄──────────────┤
-                                                 │
-                                                 ▼
-                                          Mail UI (8025)
-                                          inbox + send test
+       ├── Roundcube (8025) ──IMAP/SMTP──► Stalwart (RocksDB volume)
+       │
+       ├── SMTP (25, plaintext, AUTH) ────► Stalwart
+       │
+       └── IMAP (1143, plaintext) ◄─────── Stalwart
 ```
 
 | Service | Image | Purpose |
 |---------|-------|---------|
 | `stalwart` | [Stalwart v0.16](https://hub.docker.com/r/stalwartlabs/stalwart) | Persistent SMTP + IMAP mail server |
-| `mail-ui` | Custom Flask app | Web inbox dashboard and SMTP send test page |
+| `roundcube` | [roundcube/roundcubemail](https://hub.docker.com/r/roundcube/roundcubemail) | Webmail UI (connects to Stalwart over the Docker network) |
 
 Mail is stored in the Docker volume `smartbox-stalwart-data` (RocksDB). It survives container restarts and rebuilds.
 
@@ -42,11 +40,12 @@ docker compose up --build -d
 
 First boot runs an automatic Stalwart bootstrap (domain, plaintext listeners, mailbox, outbound relay). This can take up to a minute.
 
-### 3. Open the web UI
+### 3. Webmail and admin
 
-- Inbox: http://localhost:8025
-- Send test: http://localhost:8025/send
-- Stalwart admin (optional): http://localhost:8081/admin
+- Roundcube webmail: http://localhost:8025
+- Stalwart admin: http://localhost:8087/admin
+
+Log in to Roundcube with your mailbox credentials (`MAIL_USER` or full `MAIL_ADDRESS`, plus `MAIL_PASSWORD`). If `MAIL_DOMAIN` is set, you can use just the local part (e.g. `default`).
 
 ## Configuration
 
@@ -62,7 +61,7 @@ MAIL_HOSTNAME=mail.thm64.com
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MAIL_ADDRESS` | `default@mail.thm64.com` | Primary mailbox; default From/To on the send test page |
+| `MAIL_ADDRESS` | `default@mail.thm64.com` | Primary mailbox address |
 | `MAIL_USER` | `default` | Local part of the mailbox |
 | `MAIL_PASSWORD` | `smartbox-dev` | IMAP/SMTP password for the mailbox |
 | `MAIL_DOMAIN` | `mail.thm64.com` | Domain served by Stalwart |
@@ -70,8 +69,8 @@ MAIL_HOSTNAME=mail.thm64.com
 | `STALWART_ADMIN_PASSWORD` | `smartbox-admin` | One-time bootstrap admin password |
 | `SMTP_HOST_PORT` | `25` | Host port for SMTP (plaintext, AUTH for relay) |
 | `IMAP_HOST_PORT` | `1143` | Host port for plaintext IMAP |
-| `MAIL_UI_HOST_PORT` | `8025` | Host port for the web UI |
-| `STALWART_ADMIN_HOST_PORT` | `8081` | Host port for Stalwart admin UI |
+| `ROUNDCUBE_HOST_PORT` | `8025` | Host port for Roundcube webmail |
+| `STALWART_ADMIN_HOST_PORT` | `8087` | Host port for Stalwart admin UI |
 | `MAIL_SERVER_IP` | — | LAN IP used by the helper scripts |
 | `SMTP_RELAY_HOST` | — | Outbound smarthost; empty disables relaying |
 
@@ -118,11 +117,14 @@ SmartBox/
 ├── docker-compose.yml
 ├── .env.example
 ├── config/
-│   └── stalwart/config.json   # baked into the stalwart image at build time
-├── scripts/list_imap.py
+│   ├── roundcube/custom.inc.php   # SMTP auth + SmartBox webmail tweaks
+│   └── stalwart/config.json       # baked into the stalwart image at build time
+├── scripts/
+│   ├── list_imap.py
+│   ├── set_password.py
+│   └── copy_imap_to_smartbox.py
 └── services/
-    ├── stalwart/
-    └── mail-ui/
+    └── stalwart/
 ```
 
 ## Stopping

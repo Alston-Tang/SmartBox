@@ -6,6 +6,8 @@
 #   MAIL_PASSWORD, STALWART_ADMIN_PASSWORD
 # Optional relay (leave SMTP_RELAY_HOST empty to disable):
 #   SMTP_RELAY_HOST, SMTP_RELAY_PASSWORD, SMTP_RELAY_USERNAME
+#
+# Roundcube webmail defaults to http://localhost:8025 (IMAP/SMTP → stalwart:143 / stalwart:25).
 
 x-mail-env: &mail-env
   MAIL_ADDRESS: ${MAIL_ADDRESS:-default@mail.thm64.com}
@@ -39,7 +41,7 @@ services:
     ports:
       - "${SMTP_HOST_PORT:-25}:25/tcp"
       - "${IMAP_HOST_PORT:-1143}:143/tcp"
-      - "${STALWART_ADMIN_HOST_PORT:-8081}:8080/tcp"
+      - "${STALWART_ADMIN_HOST_PORT:-8087}:8080/tcp"
     healthcheck:
       test:
         [
@@ -51,28 +53,28 @@ services:
       retries: 10
       start_period: 90s
 
-  mail-ui:
-    build: ./services/mail-ui
-    image: ${SMARTBOX_MAIL_UI_IMAGE:-smartbox-mail-ui:plaintext-v7}
+  roundcube:
+    image: roundcube/roundcubemail:latest
     restart: unless-stopped
     depends_on:
       stalwart:
         condition: service_healthy
     environment:
-      <<: *mail-env
-      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-smartbox-local-mail-dev}
-      SMTP_HOST: ${SMTP_HOST:-stalwart}
-      SMTP_PORT: ${SMTP_PORT:-25}
-      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
-      SMTP_AUTH: ${SMTP_AUTH:-true}
-      IMAP_HOST: ${IMAP_HOST:-stalwart}
-      IMAP_PORT: ${IMAP_PORT:-143}
-      IMAP_USE_SSL: ${IMAP_USE_SSL:-false}
-      IMAP_HOST_PORT: ${IMAP_HOST_PORT:-1143}
-      SMTP_HOST_PORT: ${SMTP_HOST_PORT:-25}
+      ROUNDCUBEMAIL_DB_TYPE: sqlite
+      ROUNDCUBEMAIL_SKIN: elastic
+      ROUNDCUBEMAIL_DEFAULT_HOST: ${ROUNDCUBEMAIL_IMAP_HOST:-stalwart}
+      ROUNDCUBEMAIL_DEFAULT_PORT: ${ROUNDCUBEMAIL_IMAP_PORT:-143}
+      ROUNDCUBEMAIL_SMTP_SERVER: ${ROUNDCUBEMAIL_SMTP_HOST:-stalwart}
+      ROUNDCUBEMAIL_SMTP_PORT: ${ROUNDCUBEMAIL_SMTP_PORT:-25}
+      ROUNDCUBEMAIL_USERNAME_DOMAIN: ${MAIL_DOMAIN:-mail.thm64.com}
+    volumes:
+      - roundcube-data:/var/roundcube/db
+      - ./config/roundcube:/var/roundcube/config:ro
     ports:
-      - "${MAIL_UI_HOST_PORT:-8025}:8080/tcp"
+      - "${ROUNDCUBE_HOST_PORT:-8025}:80/tcp"
 
 volumes:
   stalwart-data:
     name: smartbox-stalwart-data
+  roundcube-data:
+    name: smartbox-roundcube-data
