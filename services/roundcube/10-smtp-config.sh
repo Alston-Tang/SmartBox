@@ -1,6 +1,13 @@
 #!/bin/sh
-# Bake SMTP settings from container env (PHP getenv() is unreliable under Apache).
+# Generate Roundcube SMTP settings from container env at startup.
+#
+# The official image only includes /var/roundcube/config/custom.inc.php, so this
+# file is written outside that directory and pulled in by custom.inc.php. Values
+# are baked in literally here (shell env is reliable at entrypoint time, unlike
+# PHP getenv() under Apache at request time).
 set -eu
+
+out="/var/roundcube/smtp.generated.inc.php"
 
 domain="${MAIL_DOMAIN:-}"
 host="${MAIL_HOSTNAME:-$domain}"
@@ -9,15 +16,12 @@ if [ -n "$domain" ]; then
   smtp_user="%u@${domain}"
 fi
 
-cat > /var/roundcube/config/smtp.inc.php <<EOF
-<?php
-// Generated at container start by SmartBox (do not edit).
-\$config['smtp_user'] = '${smtp_user}';
-\$config['smtp_pass'] = '%p';
-EOF
-
-if [ -n "$host" ]; then
-  cat >> /var/roundcube/config/smtp.inc.php <<EOF
-\$config['smtp_helo_host'] = '${host}';
-EOF
-fi
+{
+  echo "<?php"
+  echo "// Generated at container start by SmartBox (do not edit)."
+  echo "\$config['smtp_user'] = '${smtp_user}';"
+  echo "\$config['smtp_pass'] = '%p';"
+  if [ -n "$host" ]; then
+    echo "\$config['smtp_helo_host'] = '${host}';"
+  fi
+} > "$out"
