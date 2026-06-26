@@ -347,9 +347,9 @@ def ensure_smtp_submission_policy():
     }
     response = jmap(
         [
-            [["x:MtaStageAuth/set", {"update": {"singleton": auth_update}}, "ms"]],
-            [["x:MtaStageMail/set", {"update": {"singleton": mail_update}}, "mm"]],
-            [["x:MtaStageRcpt/set", {"update": {"singleton": rcpt_update}}, "mr"]],
+            ["x:MtaStageAuth/set", {"update": {"singleton": auth_update}}, "ms"],
+            ["x:MtaStageMail/set", {"update": {"singleton": mail_update}}, "mm"],
+            ["x:MtaStageRcpt/set", {"update": {"singleton": rcpt_update}}, "mr"],
         ]
     )
     for idx, label in enumerate(("MtaStageAuth", "MtaStageMail", "MtaStageRcpt")):
