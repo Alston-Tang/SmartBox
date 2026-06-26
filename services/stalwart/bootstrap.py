@@ -345,19 +345,26 @@ def ensure_smtp_submission_policy():
     rcpt_update = {
         "allowRelaying": {"else": "!is_empty(authenticated_as)"},
     }
+    ehlo_update = {
+        # Roundcube/docker clients often EHLO with a short container hostname.
+        "rejectNonFqdn": {"else": "false"},
+    }
     response = jmap(
         [
             ["x:MtaStageAuth/set", {"update": {"singleton": auth_update}}, "ms"],
             ["x:MtaStageMail/set", {"update": {"singleton": mail_update}}, "mm"],
             ["x:MtaStageRcpt/set", {"update": {"singleton": rcpt_update}}, "mr"],
+            ["x:MtaStageEhlo/set", {"update": {"singleton": ehlo_update}}, "me"],
         ]
     )
-    for idx, label in enumerate(("MtaStageAuth", "MtaStageMail", "MtaStageRcpt")):
+    for idx, label in enumerate(
+        ("MtaStageAuth", "MtaStageMail", "MtaStageRcpt", "MtaStageEhlo")
+    ):
         result = response["methodResponses"][idx][1]
         if "singleton" not in (result.get("updated") or {}):
             raise RuntimeError(f"Failed to set SMTP {label} policy: {result}")
     print(
-        "SMTP policy: AUTH on plaintext ports; From checks disabled; "
+        "SMTP policy: AUTH on plaintext ports; From/EHLO checks relaxed; "
         "relay allowed when authenticated",
         flush=True,
     )

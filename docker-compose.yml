@@ -60,6 +60,7 @@ services:
       stalwart:
         condition: service_healthy
     environment:
+      <<: *mail-env
       ROUNDCUBEMAIL_DB_TYPE: sqlite
       ROUNDCUBEMAIL_SKIN: elastic
       ROUNDCUBEMAIL_DEFAULT_HOST: ${ROUNDCUBEMAIL_IMAP_HOST:-stalwart}

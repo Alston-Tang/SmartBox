@@ -13,4 +13,10 @@ $smtp_domain = getenv('ROUNDCUBEMAIL_USERNAME_DOMAIN') ?: '';
 $config['smtp_user'] = $smtp_domain !== '' ? '%u@' . $smtp_domain : '%u';
 $config['smtp_pass'] = '%p';
 
+// Stalwart rejects non-FQDN EHLO hostnames on port 25 (e.g. container name "roundcube").
+$helo_host = getenv('MAIL_HOSTNAME') ?: $smtp_domain;
+if ($helo_host !== '') {
+    $config['smtp_helo_host'] = $helo_host;
+}
+
 $config['product_name'] = 'SmartBox Webmail';
