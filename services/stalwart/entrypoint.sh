@@ -63,4 +63,20 @@ if [ ! -f /var/lib/stalwart/.smartbox-roles-v1 ] || [ ! -f /var/lib/stalwart/.sm
   fi
 fi
 
+# Phase 3 (every boot): re-apply SMTP AUTH on plaintext port 25. Older volumes may
+# have been provisioned before this policy existed; without it Stalwart returns
+# "550 5.1.2 Relay not allowed" for unauthenticated Roundcube sends.
+/usr/local/bin/stalwart --config "$config_path" &
+stalwart_pid=$!
+
+run_bootstrap_phase policy
+policy_status=$?
+
+kill "$stalwart_pid" 2>/dev/null || true
+wait "$stalwart_pid" 2>/dev/null || true
+
+if [ "$policy_status" -ne 0 ]; then
+  exit "$policy_status"
+fi
+
 exec /usr/local/bin/stalwart --config "$config_path"

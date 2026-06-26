@@ -324,28 +324,41 @@ def ensure_default_roles():
 
 
 def ensure_smtp_submission_policy():
-    """Enable authenticated submission over the plaintext SMTP port.
+    """Enable authenticated submission over plaintext SMTP and relax From checks.
 
-    This is an internal-network-only service with no TLS. By default Stalwart
-    only offers SMTP AUTH on TLS-protected, non-25 ports, and refuses to relay
-    to external domains from unauthenticated sessions ("550 5.1.2 Relay not
-    allowed"). Here SASL PLAIN/LOGIN is offered on all SMTP ports (including 25)
-    so the web UI / mail clients can authenticate over plaintext and relay via
-    the smarthost. mustMatchSender is relaxed because Cloudflare validates the
-    sender on the outbound hop. Unauthenticated inbound mail can still only be
-    delivered to local domains, so this is not an open relay.
+    Internal-network-only service with no TLS. By default Stalwart only offers SMTP
+    AUTH on TLS-protected, non-25 ports and refuses to relay to external domains
+    from unauthenticated sessions ("550 5.1.2 Relay not allowed"). SASL PLAIN/LOGIN
+    is enabled on port 25 so Roundcube and mail clients can authenticate.
+
+    From-address checks are disabled for authenticated submission: any MAIL FROM is
+    accepted and relayed once the session is authenticated. Unauthenticated inbound
+    mail can still only be delivered to local domains.
     """
-    update = {
+    auth_update = {
         "saslMechanisms": {"else": "[plain, login]"},
         "mustMatchSender": {"else": "false"},
     }
-    result = jmap(
-        [["x:MtaStageAuth/set", {"update": {"singleton": update}}, "ms"]]
-    )["methodResponses"][0][1]
-    if "singleton" not in (result.get("updated") or {}):
-        raise RuntimeError(f"Failed to set SMTP submission policy: {result}")
+    mail_update = {
+        "isSenderAllowed": {"else": "true"},
+    }
+    rcpt_update = {
+        "allowRelaying": {"else": "!is_empty(authenticated_as)"},
+    }
+    response = jmap(
+        [
+            [["x:MtaStageAuth/set", {"update": {"singleton": auth_update}}, "ms"]],
+            [["x:MtaStageMail/set", {"update": {"singleton": mail_update}}, "mm"]],
+            [["x:MtaStageRcpt/set", {"update": {"singleton": rcpt_update}}, "mr"]],
+        ]
+    )
+    for idx, label in enumerate(("MtaStageAuth", "MtaStageMail", "MtaStageRcpt")):
+        result = response["methodResponses"][idx][1]
+        if "singleton" not in (result.get("updated") or {}):
+            raise RuntimeError(f"Failed to set SMTP {label} policy: {result}")
     print(
-        "SMTP AUTH enabled on plaintext ports (PLAIN/LOGIN); mustMatchSender disabled",
+        "SMTP policy: AUTH on plaintext ports; From checks disabled; "
+        "relay allowed when authenticated",
         flush=True,
     )
 
@@ -504,6 +517,10 @@ def main():
     phase = os.environ.get("SMARTBOX_PHASE", "recovery")
     print(f"SmartBox bootstrap {BOOTSTRAP_VERSION} (phase={phase})", flush=True)
     wait_for_jmap()
+
+    if phase == "policy":
+        ensure_smtp_submission_policy()
+        return 0
 
     if phase == "roles":
         if not ROLES_MARKER.is_file():
